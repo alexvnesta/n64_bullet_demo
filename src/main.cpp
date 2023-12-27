@@ -101,6 +101,7 @@ void setup()
     // Create the physics object
     enstantiatedPhysicsObject.initializePhysics();
     enstantiatedPhysicsObject.createPrismRigidBody();
+    enstantiatedPhysicsObject.createPrismRigidBody();
     enstantiatedPhysicsObject.createGroundRigidBody();
 }
 
@@ -165,22 +166,28 @@ void setupPrismDisplayList()
 
 void drawPrismFromDisplayList(PhysicsObjectClass *localPhysicsObject)
 {
-    glPushMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glEnable(GL_DEPTH_TEST);
+    for (auto *prismRigidBody : localPhysicsObject->getPrismRigidBodies())
+    {
+        glPushMatrix();
+        glMatrixMode(GL_MODELVIEW);
 
-    btVector3 position = localPhysicsObject->getPrismRigidBodyPosition();
-    // Apply the physics transform to the prism
-    glTranslatef(position.getX(), position.getY(), position.getZ());
+        glEnable(GL_DEPTH_TEST);
 
-    // Apply the physics rotation to the prism
-    btQuaternion rotation = localPhysicsObject->getPrismRigidBodyRotation();
-    printf("Rotation: %f, %f, %f, %f\n", rotation.getAngle() * 100, rotation.getX(), rotation.getY(), rotation.getZ());
-    //  Translate the quaternion to a rotation matrix
-    glRotatef(rotation.getAngle() * 100, rotation.getX(), rotation.getY(), rotation.getZ());
+        // Get position and rotation of the current prism
+        btVector3 position = localPhysicsObject->getPrismRigidBodyPosition(prismRigidBody);
+        btQuaternion rotation = localPhysicsObject->getPrismRigidBodyRotation(prismRigidBody);
 
-    glCallList(prismDisplayList);
-    glPopMatrix();
+        // Apply the physics transform to the prism
+        glTranslatef(position.getX(), position.getY(), position.getZ());
+
+        // Convert quaternion to angle-axis representation for OpenGL rotation
+        btScalar angle = rotation.getAngle();
+        btVector3 axis = rotation.getAxis();
+        glRotatef(angle * 180 / SIMD_PI, axis.getX(), axis.getY(), axis.getZ()); // Convert radians to degrees
+
+        glCallList(prismDisplayList);
+        glPopMatrix();
+    }
 }
 
 int main()
@@ -228,7 +235,7 @@ void handleControls()
 
     if (button_pressed.a)
     {
-        enstantiatedPhysicsObject.resetPrismRigidBody();
+        enstantiatedPhysicsObject.resetPrismRigidBodies();
     }
 }
 

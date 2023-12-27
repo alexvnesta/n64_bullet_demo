@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.rmd": "markdown",
+        "*.qmd": "quarto",
+        "cmath": "cpp"
+    }
+}

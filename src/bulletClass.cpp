@@ -34,11 +34,6 @@ void PhysicsObjectClass::initializePhysics()
     setGravity(btVector3(0, -30, 0)); // Set gravity to -30 on the Y axis to start
 }
 
-void PhysicsObjectClass::addRigidBody(btRigidBody *body)
-{
-    dynamicsWorld->addRigidBody(body);
-}
-
 void PhysicsObjectClass::stepSimulation(float deltaTime)
 {
     dynamicsWorld->stepSimulation(1.f / deltaTime, 10); // Step the simulation at 30fps
@@ -49,7 +44,7 @@ void PhysicsObjectClass::setGravity(btVector3 gravity)
     dynamicsWorld->setGravity(gravity);
 }
 
-btVector3 PhysicsObjectClass::getPrismRigidBodyPosition()
+btVector3 PhysicsObjectClass::getPrismRigidBodyPosition(btRigidBody *prismRigidBody)
 {
     btTransform trans;
     prismRigidBody->getMotionState()->getWorldTransform(trans); // Use the passed prismBody instead of GetPrismRigidBody()
@@ -59,7 +54,7 @@ btVector3 PhysicsObjectClass::getPrismRigidBodyPosition()
     return pos;
 }
 
-btQuaternion PhysicsObjectClass::getPrismRigidBodyRotation()
+btQuaternion PhysicsObjectClass::getPrismRigidBodyRotation(btRigidBody *prismRigidBody)
 {
     btTransform trans;
 
@@ -70,7 +65,7 @@ btQuaternion PhysicsObjectClass::getPrismRigidBodyRotation()
     return rot;
 }
 
-void PhysicsObjectClass::createPrismRigidBody(int rigidBodySize, int startingHeight)
+void PhysicsObjectClass::createPrismRigidBody(int rigidBodySize, int startingHeight, btVector3 startPosition)
 {
     // Similar to CreatePrism, but use the x, y, z parameters for the position
     // Create prism shape and body
@@ -106,7 +101,7 @@ void PhysicsObjectClass::createPrismRigidBody(int rigidBodySize, int startingHei
     btVector3 prismInertia(0, 0, 0);
     prismShape->calculateLocalInertia(mass, prismInertia);                                                       // Calculate the inertia of the prism
     btRigidBody::btRigidBodyConstructionInfo prismRigidBodyCI(mass, prismMotionState, prismShape, prismInertia); // I made the mass 100 so the prism is heavier
-    prismRigidBody = new btRigidBody(prismRigidBodyCI);                                                          // Create the prism rigid body
+    btRigidBody *prismRigidBody = new btRigidBody(prismRigidBodyCI);                                             // Create the prism rigid body
     dynamicsWorld->addRigidBody(prismRigidBody);                                                                 // Add the prism to the physics world
     prismRigidBody->setRestitution(0.3f);                                                                        // Make the prism bouncy
     prismRigidBody->setFriction(0.5f);                                                                           // Make the prism slippery
@@ -114,12 +109,21 @@ void PhysicsObjectClass::createPrismRigidBody(int rigidBodySize, int startingHei
 
     // Apply an initial angular velocity to make the prism spin
     prismRigidBody->setAngularVelocity(btVector3(1, 2, 1));
+
+    prismRigidBodies.push_back(prismRigidBody);
 }
 
-void PhysicsObjectClass::resetPrismRigidBody()
+void PhysicsObjectClass::resetPrismRigidBodies()
 {
     // Reset the prism rigid body to the starting position
-    prismRigidBody->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 100, 0)));
+    // prismRigidBody->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 100, 0))); //Legacy code for just one prism
+
+    for (auto *rigidBody : prismRigidBodies)
+    {
+        rigidBody->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 100, 0)));
+        rigidBody->setLinearVelocity(btVector3(0, 0, 0));
+        rigidBody->setAngularVelocity(btVector3(0, 0, 0));
+    }
 }
 
 void PhysicsObjectClass::createGroundRigidBody()
@@ -137,7 +141,7 @@ void PhysicsObjectClass::createGroundRigidBody()
 
     btDefaultMotionState *groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 0, 0)));
 
-    // Zero mass for kinematic objects
+    // Zero mass for kinematic objects - it will not move unless you move it
     btScalar mass = 0;
     btVector3 groundInertia(0, 0, 0);
     groundShape->calculateLocalInertia(mass, groundInertia);
