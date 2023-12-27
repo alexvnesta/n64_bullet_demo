@@ -129,4 +129,4 @@ build/src/main.o: src/main.cpp src/camera.hpp src/bulletClass.hpp \
  /opt/libdragon/include/bullet/BulletDynamics/Vehicle/btWheelInfo.h \
  /opt/libdragon/include/bullet/BulletDynamics/Dynamics/btActionInterface.h \
  /opt/libdragon/include/bullet/BulletDynamics/Dynamics/btRigidBody.h \
- src/main.hpp
+ src/main.hpp src/osd.hpp

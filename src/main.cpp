@@ -5,9 +5,7 @@
 #include "camera.hpp"
 #include "bulletClass.hpp"
 #include "main.hpp"
-
-#define TARGET_FRAME_TIME_MS 33.33                                         // milliseconds for 30 FPS
-#define TARGET_FRAME_TIME (TARGET_FRAME_TIME_MS * TICKS_PER_SECOND / 1000) // converting milliseconds to ticks - TICKS_PER_SECOND is defined in libdragon
+#include "osd.hpp"
 
 // Set up the Scene
 float sceneRotation = 0.0f;
@@ -23,11 +21,6 @@ PhysicsObjectClass enstantiatedPhysicsObject;
 // Initialize plane rotation
 float plane_rotationX = 0.0f;
 float plane_rotationZ = 0.0f;
-
-// Variables for handling FPS
-double frame_start;
-double frame_end;
-double frame_duration;
 
 void render()
 {
@@ -60,28 +53,16 @@ void render()
     drawPrismFromDisplayList(&enstantiatedPhysicsObject);
 
     gl_context_end();
-
     rdpq_detach_wait(); // Wait for the RDP queue to finish otherwise the display won't properly handle the text
 
-    // Handle FPS
+    updateFrameTiming();
+
+    // Draw FPS, processing time, and the line chart
     drawFPS(disp);
-    frame_end = get_ticks();
-    frame_duration = frame_end - frame_start;
-    double frame_duration_ms = (double)frame_duration / (TICKS_PER_SECOND / 1000);
-    printf("Frame start (milliSec): %f\n", frame_start / (TICKS_PER_SECOND / 1000));
-    printf("Frame end (milliSec): %f\n", frame_end / (TICKS_PER_SECOND / 1000));
-    printf("Frame duration (milliSec): %f\n", frame_duration_ms);
-    if (frame_duration_ms < TARGET_FRAME_TIME_MS)
+    drawLineChart(disp);
+    drawControls(disp);
 
-    {
-        printf("Sleeping for %f\n", TARGET_FRAME_TIME_MS - frame_duration_ms);
-        wait_ms(TARGET_FRAME_TIME_MS - frame_duration_ms);
-    }
-
-    // Message on screen for controls
-    graphics_draw_text(disp, 5, 15, "Controls:");
-    graphics_draw_text(disp, 5, 25, "Analog Stick: Move Plane");
-    graphics_draw_text(disp, 5, 35, "A: Reset Prisms");
+    controlFrameRate();
 
     // Don't forget to update the display
     display_show(disp);
@@ -105,7 +86,7 @@ void setup()
 
     // Create the physics object
     enstantiatedPhysicsObject.initializePhysics();
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 8; i++)
     {
         enstantiatedPhysicsObject.createPrismRigidBody();
     }
@@ -117,6 +98,8 @@ void drawPlane() // The plane will act as the ground
     glPushMatrix();
     glMatrixMode(GL_MODELVIEW);
     glEnable(GL_DEPTH_TEST);
+
+    glTranslatef(0.0f, -1.5f, 0.0f);
 
     // Rotate the plane if we want to
     glRotatef(plane_rotationX, 1.0f, 0.0f, 0.0f);
@@ -244,13 +227,4 @@ void handleControls()
     {
         enstantiatedPhysicsObject.resetPrismRigidBodies();
     }
-}
-
-void drawFPS(surface_t *localDisplay)
-{
-    // Get the current FPS
-    float fps = display_get_fps();
-
-    // Print the FPS to the screen
-    graphics_draw_text(localDisplay, 5, 5, std::to_string(fps).c_str());
 }
