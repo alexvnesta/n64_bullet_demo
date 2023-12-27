@@ -78,6 +78,11 @@ void render()
         wait_ms(TARGET_FRAME_TIME_MS - frame_duration_ms);
     }
 
+    // Message on screen for controls
+    graphics_draw_text(disp, 5, 15, "Controls:");
+    graphics_draw_text(disp, 5, 25, "Analog Stick: Move Plane");
+    graphics_draw_text(disp, 5, 35, "A: Reset Prisms");
+
     // Don't forget to update the display
     display_show(disp);
 }
