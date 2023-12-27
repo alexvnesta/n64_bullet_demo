@@ -1,16 +1,17 @@
-Getting the bullet physics engine took a bit of work and I am happy to have help from original pioneers like @Hazematman. I am documenting the steps I took to get bullet physics engine working in this repo. I hope this will help others who are trying to get bullet physics engine working on the N64.
-
 # Bullet Engine
+Obtaining the Bullet Physics Engine required some effort on my part to understand the process. Luckily, no additional code modifications were needed to the original Bullet codebase. I received valuable assistance from pioneers like @Hazematman. In this repository, I have documented the steps I followed to successfully integrate the Bullet Physics Engine into my N64 project. I hope this documentation will be helpful to others who are also working with the Bullet Physics Engine on the N64.
+
 
 # Getting bullet
-I got bullet from the official repo: https://github.com/bulletphysics/bullet3 and the latest commit was compatabile when I followed this procedure. For reference, the commit I used was: 6bb8d1123d8a55d407b19fd3357c724d0f5c9d3c
-
+I got bullet from the official repo: [https://github.com/bulletphysics/bullet3](https://github.com/bulletphysics/bullet3) and the latest commit was compatible when I followed this procedure. For reference, the commit I used was: `6bb8d1123d8a55d407b19fd3357c724d0f5c9d3c`  
 # Compiling bullet
 After cloning, you will need to make a custom cmake toolchain that points to your libdragon sdk to compile bullet. I have included my toolchain file in this repo. The toolchain file is called N64Toolchain.cmake. Simply place this file in the root of the bullet repo and then run cmake:
 
 See N64Toolchain.cmake for details on how to configure the toolchain. You will need to change the paths to point to your libdragon sdk. Once you have configured the toolchain, you can compile bullet with the following command:
 
-N64Toolchain.cmake 
+[N64Toolchain.cmake](../N64Toolchain.cmake)
+
+## N64Toolchain.cmake description
 ```
 # Specify the C and C++ compilers
 set(CMAKE_C_COMPILER /opt/libdragon/bin/mips64-elf-gcc)
@@ -91,6 +92,8 @@ BULLET_INCLUDE = -I/opt/libdragon/include/bullet
 ```
 
 
+
 To see another example and some physics implementations on n64, check the code in this repo by @Hazematman:
 
-https://github.com/Hazematman/Bug-Game/tree/master
+[Git - Hazematman/Bug-Game](https://github.com/Hazematman/Bug-Game/tree/master)
+
