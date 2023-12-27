@@ -100,8 +100,10 @@ void setup()
 
     // Create the physics object
     enstantiatedPhysicsObject.initializePhysics();
-    enstantiatedPhysicsObject.createPrismRigidBody();
-    enstantiatedPhysicsObject.createPrismRigidBody();
+    for (int i = 0; i < 10; i++)
+    {
+        enstantiatedPhysicsObject.createPrismRigidBody();
+    }
     enstantiatedPhysicsObject.createGroundRigidBody();
 }
 
