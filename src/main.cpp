@@ -6,16 +6,34 @@
 #include "bulletClass.hpp"
 #include "main.hpp"
 
+#define TARGET_FRAME_TIME_MS 33.33                                         // milliseconds for 30 FPS
+#define TARGET_FRAME_TIME (TARGET_FRAME_TIME_MS * TICKS_PER_SECOND / 1000) // converting milliseconds to ticks - TICKS_PER_SECOND is defined in libdragon
+
+// Set up the Scene
 float sceneRotation = 0.0f;
 surface_t zbuffer;
 camera_t camera = {100, 0};
 
+// Allocate the prism display list
+static GLuint prismDisplayList;
+
+// Enstantiate the physics object
 PhysicsObjectClass enstantiatedPhysicsObject;
+
+// Initialize plane rotation
 float plane_rotationX = 0.0f;
 float plane_rotationZ = 0.0f;
 
+// Variables for handling FPS
+double frame_start;
+double frame_end;
+double frame_duration;
+
 void render()
 {
+    // Framerate handling
+    frame_start = get_ticks();
+
     surface_t *disp = display_get();
     rdpq_attach(disp, &zbuffer);
 
@@ -38,9 +56,29 @@ void render()
     enstantiatedPhysicsObject.stepSimulation();
 
     drawPlane();
-    drawPrism();
 
-    rdpq_detach();
+    drawPrismFromDisplayList(&enstantiatedPhysicsObject);
+
+    gl_context_end();
+
+    rdpq_detach_wait(); // Wait for the RDP queue to finish otherwise the display won't properly handle the text
+
+    // Handle FPS
+    drawFPS(disp);
+    frame_end = get_ticks();
+    frame_duration = frame_end - frame_start;
+    double frame_duration_ms = (double)frame_duration / (TICKS_PER_SECOND / 1000);
+    printf("Frame start (milliSec): %f\n", frame_start / (TICKS_PER_SECOND / 1000));
+    printf("Frame end (milliSec): %f\n", frame_end / (TICKS_PER_SECOND / 1000));
+    printf("Frame duration (milliSec): %f\n", frame_duration_ms);
+    if (frame_duration_ms < TARGET_FRAME_TIME_MS)
+
+    {
+        printf("Sleeping for %f\n", TARGET_FRAME_TIME_MS - frame_duration_ms);
+        wait_ms(TARGET_FRAME_TIME_MS - frame_duration_ms);
+    }
+
+    // Don't forget to update the display
     display_show(disp);
 }
 
@@ -56,6 +94,9 @@ void setup()
 
     camera.distance = -200;
     camera.rotationY = -22.5;
+
+    // Set up the prism display list - this is a static object so we only need to do this once even if we draw it multiple times
+    setupPrismDisplayList();
 
     // Create the physics object
     enstantiatedPhysicsObject.initializePhysics();
@@ -90,22 +131,13 @@ void drawPlane() // The plane will act as the ground
     glPopMatrix();
 }
 
-void drawPrism() // A prism is the simplest 3D shape to draw
+void setupPrismDisplayList()
 {
-    glPushMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glEnable(GL_DEPTH_TEST);
+    // Allocate the prism display list
+    prismDisplayList = glGenLists(1);
 
-    btVector3 position = enstantiatedPhysicsObject.getPrismRigidBodyPosition();
-    // Apply the physics transform to the prism
-    glTranslatef(position.getX(), position.getY(), position.getZ());
-
-    // Apply the physics rotation to the prism
-    btQuaternion rotation = enstantiatedPhysicsObject.getPrismRigidBodyRotation();
-    printf("Rotation: %f, %f, %f, %f\n", rotation.getAngle() * 100, rotation.getX(), rotation.getY(), rotation.getZ());
-    //  Translate the quaternion to a rotation matrix
-    glRotatef(rotation.getAngle() * 100, rotation.getX(), rotation.getY(), rotation.getZ());
-
+    // Create the prism display list
+    glNewList(prismDisplayList, GL_COMPILE);
     glBegin(GL_TRIANGLES);
     // Front
     glColor3f(1.0f, 0.0f, 0.0f);
@@ -128,6 +160,26 @@ void drawPrism() // A prism is the simplest 3D shape to draw
     glVertex3f(-3.0f, 0.0f, -3.0f);
     glVertex3f(-3.0f, 0.0f, 3.0f);
     glEnd();
+    glEndList();
+}
+
+void drawPrismFromDisplayList(PhysicsObjectClass *localPhysicsObject)
+{
+    glPushMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glEnable(GL_DEPTH_TEST);
+
+    btVector3 position = localPhysicsObject->getPrismRigidBodyPosition();
+    // Apply the physics transform to the prism
+    glTranslatef(position.getX(), position.getY(), position.getZ());
+
+    // Apply the physics rotation to the prism
+    btQuaternion rotation = localPhysicsObject->getPrismRigidBodyRotation();
+    printf("Rotation: %f, %f, %f, %f\n", rotation.getAngle() * 100, rotation.getX(), rotation.getY(), rotation.getZ());
+    //  Translate the quaternion to a rotation matrix
+    glRotatef(rotation.getAngle() * 100, rotation.getX(), rotation.getY(), rotation.getZ());
+
+    glCallList(prismDisplayList);
     glPopMatrix();
 }
 
@@ -178,4 +230,13 @@ void handleControls()
     {
         enstantiatedPhysicsObject.resetPrismRigidBody();
     }
+}
+
+void drawFPS(surface_t *localDisplay)
+{
+    // Get the current FPS
+    float fps = display_get_fps();
+
+    // Print the FPS to the screen
+    graphics_draw_text(localDisplay, 5, 5, std::to_string(fps).c_str());
 }

@@ -1,4 +1,5 @@
 #include "bulletClass.hpp"
+#include <math.h>
 
 PhysicsObjectClass::PhysicsObjectClass()
 {
@@ -123,25 +124,48 @@ void PhysicsObjectClass::resetPrismRigidBody()
 
 void PhysicsObjectClass::createGroundRigidBody()
 {
-    // Define ground shape and body
-    btCollisionShape *groundShape = new btStaticPlaneShape(btVector3(0, 1, 0), 0);                                                 // Create the ground shape
-    btDefaultMotionState *groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 0, 0))); // Set the starting position of the ground
-    btRigidBody::btRigidBodyConstructionInfo groundRigidBodyCI(0, groundMotionState, groundShape, btVector3(0, 0, 0));             // Zero mass for static objects
-    groundRigidBody = new btRigidBody(groundRigidBodyCI);                                                                          // Create the ground rigid body
-    groundRigidBody->setRestitution(1.0f);                                                                                         // Make the ground bouncy
-    dynamicsWorld->addRigidBody(groundRigidBody);                                                                                  // Add the ground to the world
+    // Define ground shape and body - this is for an infinite ground, but I want to let the user define the size of the ground
+    // btCollisionShape *groundShape = new btStaticPlaneShape(btVector3(0, 1, 0), 0);
+
+    // Plane dimensions
+    float planeWidth = 200.0f; // Width of the plane
+    float planeDepth = 200.0f; // Depth of the plane
+
+    // Define ground shape as a box - since I want the user to rotate the plane, I am making it a kinematic object
+    btVector3 groundHalfExtents(planeWidth / 2, 0.1f, planeDepth / 2);
+    btCollisionShape *groundShape = new btBoxShape(groundHalfExtents);
+
+    btDefaultMotionState *groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 0, 0)));
+
+    // Zero mass for kinematic objects
+    btScalar mass = 0;
+    btVector3 groundInertia(0, 0, 0);
+    groundShape->calculateLocalInertia(mass, groundInertia);
+
+    btRigidBody::btRigidBodyConstructionInfo groundRigidBodyCI(mass, groundMotionState, groundShape, groundInertia);
+    groundRigidBody = new btRigidBody(groundRigidBodyCI); // Create the ground rigid body
+    groundRigidBody->setRestitution(1.0f);                // Make the ground bouncy
+    // Set the ground as a kinematic object
+    groundRigidBody->setCollisionFlags(groundRigidBody->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT); // Set the ground as a kinematic object - this allows us to rotate the ground, but it does not allow the ground to bounce off of other objects
+    groundRigidBody->setActivationState(DISABLE_DEACTIVATION);                                                         // Make the ground always active
+
+    dynamicsWorld->addRigidBody(groundRigidBody); // Add the ground to the physics world
 }
 
-void PhysicsObjectClass::updatePlaneRotation(float plane_rotationX, float plane_rotationY)
+void PhysicsObjectClass::updatePlaneRotation(float rotationX, float rotationZ)
 {
+    btTransform trans;
+    groundRigidBody->getMotionState()->getWorldTransform(trans);
 
-    // Set the prismRigidBody to active if it is not already
-    prismRigidBody->activate();
-    groundRigidBody->activate();
-    // Update the motion state of the ground based on the plane_rotationX and plane_rotationY
-    // convert the rotation to a quaternion
+    // Convert degrees to radians for Bullet Physics
+    float radianX = rotationX * SIMD_PI / 180.0f; // Use SIMD_PI instead of M_PI
+    float radianZ = rotationZ * SIMD_PI / 180.0f; // Use SIMD_PI instead of M_PI
+
+    // Set rotation using Euler angles
     btQuaternion quat;
-    quat.setEuler(plane_rotationX, 0, plane_rotationY);
-    // set the rotation of the ground rigid body
-    groundRigidBody->setWorldTransform(btTransform(quat, btVector3(0, 0, 0)));
+    quat.setEuler(0, radianX, radianZ); // Assuming rotation around Z and X axes
+    trans.setRotation(quat);
+
+    groundRigidBody->getMotionState()->setWorldTransform(trans);
+    groundRigidBody->setWorldTransform(trans); // Update the world transform as well
 }

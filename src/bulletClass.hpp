@@ -11,7 +11,7 @@ public:
     void setGravity(btVector3 gravity);                                         // Set gravity
     void createPrismRigidBody(int rigidBodySize = 3, int startingHeight = 100); // Create a prism rigid body
     void createGroundRigidBody();                                               // Create a ground rigid body
-    void stepSimulation(float deltaTime = 60.0f);                               // Step the simulation
+    void stepSimulation(float deltaTime = 30.0f);                               // Step the simulation
     void updatePlaneRotation(float plane_rotationX, float plane_rotationY);     // Update the rotation of the plane
     void resetPrismRigidBody();                                                 // Reset the prism rigid body to the starting position
     btVector3 getPrismRigidBodyPosition();                                      // Get the position of the rigid body

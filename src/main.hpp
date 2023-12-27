@@ -3,5 +3,7 @@
 void render();
 void setup();
 void drawPlane();
-void drawPrism();
 void handleControls();
+void setupPrismDisplayList();
+void drawPrismFromDisplayList(PhysicsObjectClass *localPhysicsObject);
+void drawFPS(surface_t *localDisplay);
